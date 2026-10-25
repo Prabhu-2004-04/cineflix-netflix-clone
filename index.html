@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CineFlix | Open Movie Streaming</title>
+  <meta name="description" content="Explore and stream 10 legendary Blender open movies with full in-page playback, custom video controls, and official open-license attribution.">
+  <link rel="stylesheet" href="style.css">
+  <!-- YouTube IFrame Player API -->
+  <script src="https://www.youtube.com/iframe_api" async></script>
+</head>
+<body>
+  <header>
+    <a class="logo" href="#" aria-label="CineFlix Home">CINE<span>FLIX</span></a>
+    <input id="search" type="search" placeholder="Search open movies..." aria-label="Search movies">
+    <select id="genre" aria-label="Filter genre">
+      <option value="All">All Genres</option>
+      <option value="Animation">Animation</option>
+      <option value="Sci-Fi">Sci-Fi</option>
+      <option value="Adventure">Adventure</option>
+      <option value="Comedy">Comedy</option>
+    </select>
+  </header>
+
+  <section class="hero">
+    <p>OPEN MOVIE COLLECTION</p>
+    <h1>Great stories.<br><span>Open to everyone.</span></h1>
+    <p>Explore independently produced films shared for watching, learning, and open-source creativity.</p>
+    <button id="featured" type="button">▶ Watch Big Buck Bunny</button>
+  </section>
+
+  <main>
+    <div class="section-header">
+      <h2>Explore films <small id="count"></small></h2>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <!-- Video Player Modal Overlay -->
+  <div class="overlay hidden" id="overlay" role="dialog" aria-modal="true" aria-labelledby="title">
+    <div class="modal">
+      <button id="close" class="close" type="button" aria-label="Close movie player">×</button>
+      
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="badge" id="modal-badge">OPEN MOVIE</span>
+          <h2 id="title">Loading...</h2>
+          <span class="modal-meta" id="modal-meta"></span>
+        </div>
+      </div>
+
+      <!-- Video Player Wrapper -->
+      <div class="player-container" id="player-container" tabindex="0" aria-label="Video player">
+        <!-- Loading State -->
+        <div class="player-loading" id="player-loading">
+          <div class="spinner"></div>
+          <span id="player-loading-text">Loading authentic movie stream...</span>
+        </div>
+
+        <!-- Error State Overlay -->
+        <div class="player-error hidden" id="player-error">
+          <div class="error-icon">⚠️</div>
+          <h3>Stream Unavailable</h3>
+          <p id="error-message">Unable to stream this video directly. You can retry or watch directly on the official source.</p>
+          <div class="error-actions">
+            <button id="error-retry" class="btn-retry" type="button">🔄 Retry Stream</button>
+            <a id="error-source" class="btn-external" target="_blank" rel="noopener">Open Official Source ↗</a>
+          </div>
+        </div>
+
+        <!-- Video Hosts -->
+        <div id="yt-player-wrapper" class="video-host">
+          <div id="yt-player"></div>
+        </div>
+        <video id="video" class="video-host hidden" playsinline></video>
+
+        <!-- Big Center Play / Pause Indicator -->
+        <button class="center-play-btn hidden" id="center-play-btn" type="button" aria-label="Play or Pause Video">
+          <svg class="center-icon-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+          <svg class="center-icon-pause hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+
+        <!-- CineFlix Custom Controls Overlay -->
+        <div class="player-controls" id="player-controls">
+          <!-- Seek / Progress Bar -->
+          <div class="progress-container" id="progress-container" role="slider" aria-label="Seek slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="progress-bar" id="progress-bar">
+              <div class="progress-buffered" id="progress-buffered"></div>
+              <div class="progress-played" id="progress-played"></div>
+              <div class="progress-thumb" id="progress-thumb"></div>
+            </div>
+            <div class="time-tooltip" id="time-tooltip">00:00</div>
+          </div>
+
+          <!-- Bottom Control Bar -->
+          <div class="controls-row">
+            <div class="controls-left">
+              <button class="ctrl-btn" id="ctrl-play" type="button" aria-label="Play or pause">
+                <svg class="icon-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              </button>
+
+              <div class="volume-group">
+                <button class="ctrl-btn" id="ctrl-mute" type="button" aria-label="Mute or unmute">
+                  <svg class="icon-vol-high" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                  <svg class="icon-vol-muted hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                </button>
+                <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="100" aria-label="Volume slider">
+              </div>
+
+              <span class="time-display" id="time-display">00:00 / 00:00</span>
+            </div>
+
+            <div class="controls-right">
+              <span class="quality-badge" id="source-badge">HD Stream</span>
+              <button class="ctrl-btn" id="ctrl-fullscreen" type="button" aria-label="Toggle fullscreen">
+                <svg class="icon-fs-enter" viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                <svg class="icon-fs-exit hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Movie Information -->
+      <div class="modal-info-panel">
+        <div class="modal-synopsis">
+          <h3>Synopsis</h3>
+          <p id="desc"></p>
+        </div>
+        <div class="modal-attribution">
+          <strong>Licensing & Credits</strong>
+          <p id="credit"></p>
+          <a id="source" target="_blank" rel="noopener">Official film / license source ↗</a>
+        </div>
+      </div>
+
+      <p class="note">
+        All 10 films are authentic open movies released by the Blender Foundation and Blender Studio. Direct in-page playback uses verified official streams with full controls. Review individual licenses before reuse.
+      </p>
+    </div>
+  </div>
+
+  <footer>
+    <p>CineFlix is an independent open-movie streaming interface inspired by modern streaming services. All films are copyrighted works shared under open Creative Commons licenses by the Blender Foundation and Blender Studio.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
